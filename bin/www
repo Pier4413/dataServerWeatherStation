@@ -1,0 +1,270 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var http = require('http');
+var fs = require('fs');
+var path = require('path');
+//var https = require('https');
+
+const {log4js, pathLogConfig, logWatcher} = require('../log4js');
+const logger = log4js.getLogger('www');
+
+let socketArray = [];
+let lastSocketKey = 0;
+
+/**
+ * Mongoose connection
+ */
+const {databaseClose, databaseOpen} = require('../database/db');
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * HTTPS Options
+ */
+/*const https_options =
+{
+  key : fs.readFileSync((path.join(__dirname, '../certs', 'device.key')), 'utf8'),
+  cert: fs.readFileSync((path.join(__dirname, '../certs', 'device.crt')), 'utf8'),
+  requestCert: false
+};*/
+
+/**
+ * Create HTTP server.
+ */
+var server = http.createServer(app);
+//var server = https.createServer(https_options, app);
+
+/**
+ * Init the process
+ */
+logger.warn('--------- PROCESS START WITH PID ' + process.pid + ' ---------');
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port, "0.0.0.0");
+server.on('error', onError);
+server.on('listening', onListening);
+server.on('connect',onConnection);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      logger.fatal(bind + ' requires elevated privileges');
+      logKill(134);
+      break;
+    case 'EADDRINUSE':
+      logger.fatal(bind + ' is already in use');
+      logKill(134);
+      break;
+    case 'EINVAL':
+      logger.fatal('EINVAL : ' + error.toString());
+      logKill(134);
+      break;
+    case 'EAI_AGAIN':
+      logger.fatal('EAI_AGAIN : ' + error.toString());
+      logKill(134);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? addr
+    : addr.port;
+  var address = typeof addr === 'string'
+      ? 'http://' + addr
+      : 'http://' + addr.address;
+  logger.warn('----- SERVER LISTENING ON ' + address + ':' + bind + ' -----');
+  logger.debug('Listening on port '+bind);
+  databaseOpen();
+}
+
+function onConnection(socket)
+{
+    var socketKey = ++lastSocketKey;
+    socketArray[socketKey] = socket;
+    socket.on('close', function(){
+        delete socketArray[socketKey];
+    })
+}
+
+/*
+ * This function insure that you can write a stop log and use shutdown easily in all kills
+ */
+function logKill(exitCode)
+{
+  var addr = server.address();
+  //server.close is not stopping immediately the data flow, but this will just stop the server from accepting new requests
+  logger.warn('------------- SERVER CLOSING HAS BEEN STARTED PLEASE WAIT UNTIL THE END IT COULD BE LONG -------------')
+
+  //You have to do that before server.close because the callback function does not trigger while there is opened connections
+  logger.warn('------ KILLED ALL EXISTING CONNECTIONS ------');
+  socketArray.forEach(function(element){
+      logger.debug(element);
+      element.destroy();
+  });
+  logger.warn('------ ALL CONNECTIONS KILLED ------');
+
+  server.close(function() {
+      var bind = 'unknownPort';
+      var address = 'unknownAddress';
+      if(addr!==null)
+      {
+          bind = typeof addr === 'string'
+              ? addr
+              : addr.port;
+          address = typeof addr === 'string'
+              ? 'https://' + addr
+              : 'https://' + addr.address;
+      }
+
+      //Close the mongoose connection
+      databaseClose(function () {
+
+      //Unwatch the log config file modifications
+      fs.unwatchFile(pathLogConfig);
+
+      logger.warn('Mongoose default connection disconnected through app termination');
+      logger.warn('----- CONNECTION CLOSE ON ' + address + ':' + bind + ' -----');
+      logger.warn('--------- PROCESS EXITS ON CODE ' + exitCode + ' ---------');
+      logger.warn('------------- SERVER HAS SUCCESSFULLY FINISHED -------------\n\n');
+
+      process.exit(exitCode);
+    });
+  });
+}
+
+/*
+ * Process on securities
+ */
+
+// SIGKILL: Terminates a process immediately. This signal CANNOT be handled (caught), ignored or blocked.
+// (The "kill -9" command in linux generates the same signal).
+//
+// SIGTERM: Terminates a process immediately. However, this signal can be handled, ignored or caught in code.
+// If the signal is not caught by a process, the process is killed. Also, this is used for graceful termination of a process.
+// (The "kill" command in linux if specified without any signal number like -9, will send SIGTERM)
+//
+// SIGINT: Interrupts a process. (The default action is to terminate gracefully). This too, like, SIGTERM can be handled, ignored or caught.
+// The difference between SIGINT and SIGTERM is that the former can be sent from a terminal as input characters.
+// This is the signal generated when a user presses Ctrl+C. (Sidenote: Ctrl+C denotes EOT(End of Transmission) for (say) a network stream)
+//
+// SIGQUIT: Terminates a process. This is different from both SIGKILL and SIGTERM in the sense that it generates a core dump of the process
+// and also cleans up resources held up by a process. Like SIGINT, this can also be sent from the terminal as input characters.
+// It can be handled, ignored or caught in code. This is the signal generated when a user presses Ctrl+\.
+//
+// SIGTSTP: Suspends a process. This too, can be handled, ignored or blocked.
+// Since it does not terminate the process, the process can be resumed by sending a SIGCONT signal.
+// This signal can be generated by pressing Ctrl+Z. (Sidenote: Ctrl+Z stands for substitute character which indicates End-of-File in DOS)
+//
+// SIGHUP: (From Wikipedia): Hangs up a process when the controlling terminal is disconnected.
+// This especially relates to modem/dial in connections. A process has to explicitly handle this signal for it to work.
+// A good use is to "poke" a process and letting the process (as defined by the programmer) decide what to do with the signal is described here.
+// Hence, SIGHUP can be handled, ignored or caught. This is the signal generated when a user presses Ctrl+D.
+
+// The UNIX list of exit codes is like that
+//Classic exit code is 128 + sigValue
+// Signal Number  	Sig Value
+// 0	              Normal exit
+// 1	              SIGHUP
+// 2	              SIGINT
+// 3	              SIGQUIT
+// 6	              SIGABRT
+// 14               SIGALRM
+// 15	              SIGTERM
+// 20               SIGTSTP
+
+//Sources :
+// - http://pubs.opengroup.org/onlinepubs/7908799/xcu/kill.html (The Single UNIX ® Specification, Version 2 Copyright © 1997 The Open Group)
+// - man 1 kill
+// - man 2 kill
+// - https://en.wikipedia.org/wiki/Signal_(IPC)#POSIX_signals
+
+process.on('SIGHUP', function() {
+  logger.fatal('Ctrl+D pressed (SIGHUP)');
+  logKill(129);
+});
+
+process.on('SIGINT', function ()
+{
+  logger.info('Ctrl+C pressed (SIGINT)');
+  logKill(130)
+});
+
+process.on('SIGQUIT', function() {
+logger.fatal('Ctrl+\\ pressed (SIGQUIT)');
+logKill(131);
+});
+
+process.on('uncaughtException', (err) => {
+  logger.fatal('Uncaught Exception ' + err.toString());
+  logKill(142);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.log(err);
+  logger.fatal('Unhandled Rejection'+err.toString());
+  logKill(142);
+});
+
+process.on('SIGTERM', function() {
+  logger.fatal('Command kill called (SIGTERM)');
+  logKill(143);
+});
+
+process.on('SIGTSTP', function() {
+  logger.fatal('Ctrl+Z pressed (SIGTSTP)');
+  logKill(148);
+});

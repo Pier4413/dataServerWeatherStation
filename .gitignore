@@ -1,0 +1,4 @@
+log4jsConfig*
+package-lock*
+node_modules
+settings.js
