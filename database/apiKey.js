@@ -2,13 +2,13 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const schema = new Schema({
-	key: {type: String, required: true, default: null},
-  methods: {type: Array, required: true, default: []}
+	key: {type: String},
+  methods: {type: Array}
 },
 {
     timestamps: true
 })
 
-const ApiKey = mongoose.model('ApiKey', schema);
+const ApiKey = mongoose.model('Keys', schema);
 
 module.exports = ApiKey;

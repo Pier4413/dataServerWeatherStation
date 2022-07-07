@@ -5,11 +5,13 @@ var cors = require('cors');
 
 var indexRouter = require('./routes/index');
 var weatherRouter = require('./routes/weather');
+var apiRouter = require('./routes/api')
 
 var app = express();
 
 const {personalError} = require('./utils/errors');
-const {checkApiKey} = require('./utils/object');
+const {checkAccess} = require('./utils/object');
+const { crossOrigins } = require('./settings');
 
 // view engine setup
 
@@ -18,15 +20,13 @@ app.use(log4js.connectLogger(loggerLog4js, {level: 'auto', format:  ':remote-add
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.options('*', cors({
-    origin: ["http://localhost:8080"]
+    origin: crossOrigins
   })
 );
 
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:8080");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  var test = checkApiKey(req.headers['api_key'], req.method).then(res => {
-    if(test) {
+  checkAccess(res, req.headers['api_key'], req.method, req.headers.origin).then(result => {
+    if(result) {
       next();
     } else {
       personalError(res, null, "NOT AUTHORIZED API KEY DOESN'T MATCH", 401);
@@ -38,6 +38,7 @@ app.use((req, res, next) => {
 
 app.use('/', indexRouter);
 app.use('/weather', weatherRouter)
+app.use('/api', apiRouter)
 
 app.use(function(req, res, next) {
   personalError(res, null, "Generic not found", 404);
