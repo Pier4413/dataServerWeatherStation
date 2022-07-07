@@ -3,8 +3,8 @@
 This is the server part of the weather station for data storage and management
 
 See also : 
- - TODO
- - TODO
+ - [Embedded (Python)](https://github.com/Pier4413/embeddedPythonWeatherStation.git)
+ - [Web Interface (Vue.js)](https://github.com/Pier4413/webInterfaceWeatherStation.git)
 
 ## Create the log4jsConfig.json file
 
