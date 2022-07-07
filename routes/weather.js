@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 const { personalError } = require('../utils/errors');
+const { deleteData } = require('../utils/clean')
 
 const Weather = require('../database/weather');
 const Miscellaneous = require('../database/miscellaneous');
@@ -41,30 +42,13 @@ router.post('/', function (req, res) {
 })
 
 router.delete('/', (req, res) => {
-    logger.info("TEST")
-    Weather.deleteOne({
-        "_id": req.body.weather_id
-    }).then(() => {
-        Wind.deleteOne({
-            "_id": req.body.wind_id
-        }).then(() => {
-            Position.deleteOne({
-                "_id": req.body.position_id
-            }).then(() => {
-                Temperature.deleteOne({
-                    "_id": req.body.temperature_id
-                }).then(() => {
-                    Miscellaneous.deleteOne({
-                        "_id": req.body.misc_id
-                    }).then(() => {
-                        res.status(200).send()
-                    })
-                })
-            })
+    deleteData(req.body)
+        .then(() => {
+            res.status(200).send()
         })
-    }).catch(err => {
-        personalError(res, err, null, 400);
-    })
+        .catch(err => {
+            personalError(res, err, `CAN'T DELETE DATA id ${req.body._id}`, 400)
+        })
 })
 
 router.get('/last_hour', (req, res) => {

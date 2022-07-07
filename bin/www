@@ -4,6 +4,8 @@
  * Module dependencies.
  */
 
+
+
 var app = require('../app');
 var http = require('http');
 var fs = require('fs');
@@ -12,6 +14,8 @@ var path = require('path');
 
 const {log4js, pathLogConfig, logWatcher} = require('../log4js');
 const logger = log4js.getLogger('www');
+const { cleanData } = require("../utils/clean");
+const retentionTime = require('../settings.js').retentionTime
 
 let socketArray = [];
 let lastSocketKey = 0;
@@ -128,6 +132,10 @@ function onListening() {
       : 'http://' + addr.address;
   logger.warn('----- SERVER LISTENING ON ' + address + ':' + bind + ' -----');
   logger.debug('Listening on port '+bind);
+  
+  if(retentionTime > 0) {
+    setTimeout(function(){ cleanData(retentionTime) }, 4 * 60 * 60 * 1000 )
+  }
   databaseOpen();
 }
 

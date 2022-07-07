@@ -53,5 +53,9 @@ const database = {
     pwd: ""
 }
 
-module.exports = {database: database};
+const retentionTime = 4
+
+module.exports = {database: database, retentionTime: retentionTime};
 ```
+
+The retention time correspond to the time we want to keep data (to not create a too big database). You can pass 0 or a negative value to never clean the data. The time is in hours
