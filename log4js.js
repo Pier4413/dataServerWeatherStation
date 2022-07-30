@@ -1,6 +1,6 @@
 const log4js = require('log4js');
 const {log4jsConfigPath} = require('./settings.js').log4jsConfigPath
-const pathLogConfig = "./server/log4jsConfig.json";
+const pathLogConfig = log4jsConfigPath;
 
 /*This is configuring log4js
 * If you wanna add an appender or a logger please see the wiki on the gitlab server
