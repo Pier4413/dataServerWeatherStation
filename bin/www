@@ -130,6 +130,10 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? addr
     : addr.port;
+  var type = "http://"
+  if(settings.https) {
+    type = "https://"
+  }
   var address = typeof addr === 'string'
       ? 'http://' + addr
       : 'http://' + addr.address;
