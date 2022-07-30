@@ -24,6 +24,8 @@ app.options('*', cors({
   })
 );
 
+app.use('/api', apiRouter)
+
 app.use((req, res, next) => {
   checkAccess(res, req.headers['api_key'], req.method, req.headers.origin).then(result => {
     if(result) {
@@ -38,7 +40,6 @@ app.use((req, res, next) => {
 
 app.use('/', indexRouter);
 app.use('/weather', weatherRouter)
-app.use('/api', apiRouter)
 
 app.use(function(req, res, next) {
   personalError(res, null, "Generic not found", 404);
