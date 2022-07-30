@@ -1,4 +1,5 @@
 const log4js = require('log4js');
+const {log4jsConfigPath} = require('./settings.js').log4jsConfigPath
 const pathLogConfig = "./server/log4jsConfig.json";
 
 /*This is configuring log4js
