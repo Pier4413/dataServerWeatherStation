@@ -8,6 +8,7 @@
 
 var app = require('../app');
 var http = require('http');
+var https = require('https')
 var fs = require('fs');
 var path = require('path');
 //var https = require('https');
@@ -24,6 +25,7 @@ let lastSocketKey = 0;
  * Mongoose connection
  */
 const {databaseClose, databaseOpen} = require('../database/db');
+const settings = require('../settings.js');
 
 /**
  * Get port from environment and store in Express.
@@ -35,18 +37,19 @@ app.set('port', port);
 /**
  * HTTPS Options
  */
-/*const https_options =
-{
-  key : fs.readFileSync((path.join(__dirname, '../certs', 'device.key')), 'utf8'),
-  cert: fs.readFileSync((path.join(__dirname, '../certs', 'device.crt')), 'utf8'),
-  requestCert: false
-};*/
-
+var server = http.createServer(app);
+if(settings.https) {
+  const https_options =
+  {
+    key : fs.readFileSync(settings.https.key, 'utf8'),
+    cert: fs.readFileSync(settings.https.cert, 'utf8'),
+    requestCert: false
+  };
+  server = https.createServer(https_options, app);
+}
 /**
  * Create HTTP server.
  */
-var server = http.createServer(app);
-//var server = https.createServer(https_options, app);
 
 /**
  * Init the process
