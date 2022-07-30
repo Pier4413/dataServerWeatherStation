@@ -130,13 +130,13 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? addr
     : addr.port;
-  var type = "http://"
+  var typeHttp = "http://"
   if(settings.https) {
-    type = "https://"
+    typeHttp = "https://"
   }
   var address = typeof addr === 'string'
-      ? 'http://' + addr
-      : 'http://' + addr.address;
+      ? typeHttp + addr
+      : typeHttp + addr.address;
   logger.warn('----- SERVER LISTENING ON ' + address + ':' + bind + ' -----');
   logger.debug('Listening on port '+bind);
   
