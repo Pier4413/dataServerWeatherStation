@@ -54,7 +54,7 @@ router.delete('/', (req, res) => {
 router.get('/', (req, res) => {
     let duration = 60*60*1000
     if(req.query.duration) {
-        duration = req.query.duration
+        duration = req.query.duration * 1000
     }
     Weather.find({ updatedAt: { $gte: new Date(Date.now() - duration) } })
         .populate('misc')
