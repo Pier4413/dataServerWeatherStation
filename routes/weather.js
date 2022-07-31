@@ -47,7 +47,25 @@ router.delete('/', (req, res) => {
             res.status(200).send()
         })
         .catch(err => {
-            personalError(res, err, `CAN'T DELETE DATA id ${req.body._id}`, 400)
+            personalError(res, err, `CAN'T DELETE DATA ID ${req.body._id}`, 400)
+        })
+})
+
+router.get('/', (req, res) => {
+    let duration = 60*60*1000
+    if(req.query.duration) {
+        duration = req.query.duration
+    }
+    Weather.find({ updatedAt: { $gte: new Date(Date.now() - duration) } })
+        .populate('misc')
+        .populate('temperature')
+        .populate('position')
+        .populate('wind')
+        .then(resWeather => {
+            res.json(resWeather)
+        })
+        .catch(err => {
+            personalError(res, err, "ERROR IN WEATHER QUERY", 400)
         })
 })
 
@@ -60,6 +78,9 @@ router.get('/last_hour', (req, res) => {
         .then(resWeather => {
             res.json(resWeather)
         })
+        .catch(err => {
+            personalError(res, err, "ERROR IN WEATHER QUERY LAST HOUR", 400)
+        })
 })
 
 router.get('/history', (req, res) => {
@@ -70,6 +91,9 @@ router.get('/history', (req, res) => {
         .populate('wind')
         .then(resWeather => {
             res.json(resWeather)
+        })
+        .catch(err => {
+            personalError(res, err, "ERROR IN WEATHER QUERY HISTORY", 400)
         })
 })
 
@@ -87,6 +111,9 @@ router.get('/latest', (req, res) => {
             } else {
                 res.json({})
             }
+        })
+        .catch(err => {
+            personalError(res, err, "ERROR IN WEATHER QUERY LATEST", 400)
         })
 })
 module.exports = router;
