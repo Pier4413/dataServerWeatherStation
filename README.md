@@ -46,16 +46,29 @@ You need to create a settings.js file with at least the minimal data in it :
 You can parameter the host, port, user, password and dbName
 ```
 const database = {
-    host: "127.0.0.1",
-    port: 27017,
-    dbName: "weather",
-    user: "",
-    pwd: ""
+    host: <ip of the database>,
+    port: <port of the database>,
+    dbName: <db name>,
+    user: <user if any. Optional>,
+    pwd: <password of the use if any. Optional>
 }
 
-const retentionTime = 4
+const retentionTime = <The retention time for data in hours>
 
-module.exports = {database: database, retentionTime: retentionTime};
+const crossOrigins = [<values of cross origins in the form of strings>]
+
+const adminPassword = <The admin password we want to set>
+
+const log4jsConfigPath = <path of the log4js config file in a json format>
+
+const https = {
+  key: <path of the private key>,
+  cert: <path of the public cert>
+};
+
+module.exports = {database: database, retentionTime: retentionTime, crossOrigins: crossOrigins, adminPassword: adminPassword, log4jsConfigPath: log4jsConfigPath, https: https};
 ```
 
 The retention time correspond to the time we want to keep data (to not create a too big database). You can pass 0 or a negative value to never clean the data. The time is in hours
+
+Please not that the https option is optional and if none is provided the server will launch in http mode
