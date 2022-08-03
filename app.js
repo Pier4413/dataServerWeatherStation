@@ -28,7 +28,7 @@ app.use('/api', apiRouter)
 
 app.use((req, res, next) => {
   checkAccess(res, req.headers['api_key'], req.method, req.headers.origin).then(result => {
-    if(result) {
+    if(result == 0) {
       next();
     } else {
       personalError(res, null, "NOT AUTHORIZED API KEY DOESN'T MATCH", 401);
